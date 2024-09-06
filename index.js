@@ -1,8 +1,15 @@
 import express from 'express';
+import morgan from 'morgan';
 
 const app = express();
 
+morgan.token('body', req => {
+    return  JSON.stringify(req.body);
+})
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan(':method :url :status :body :res[content-length] '));
 
 let persons = [
     {
@@ -94,7 +101,6 @@ app.post('/api/persons', (req, res) => {
         )
     }
 
-
     const person = {
         "id": randomId(),
         "name": body.name,
@@ -103,8 +109,7 @@ app.post('/api/persons', (req, res) => {
 
     persons = persons.concat(...persons, person);
     res.json(person);
-})
-
+});
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
