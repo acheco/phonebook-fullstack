@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import morgan from 'morgan';
 
 const app = express();
@@ -10,6 +11,8 @@ morgan.token('body', req => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(':method :url :status :body :res[content-length] '));
+app.use(express.static('dist'));
+app.use(cors());
 
 let persons = [
     {
