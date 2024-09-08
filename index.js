@@ -34,7 +34,7 @@ app.get('/info', (req, res) => {
 });
 
 // GET a single contact
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
 
     Contact.findById(req.params.id)
         .then((contact) => {
@@ -45,28 +45,26 @@ app.get('/api/persons/:id', (req, res) => {
             }
         })
         .catch(error => {
-            console.error(error);
-            res.status(500).end();
+            next(error);
         })
-
 });
 
 // DELETE a contact
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
     const id = req.params.id;
 
     Contact.deleteOne({_id: id})
         .then((contact) => {
             res.status(204).end();
-        });
-
+        })
+        .catch(error => {
+            next(error);
+        })
 })
 
 // POST a new contact
 app.post('/api/persons', (req, res) => {
     const body = req.body;
-
-    // const personExist = persons.find((person) => person.name === body.name);
 
     if (body.name === undefined || body.name === '') {
         return res.status(400).json(
@@ -83,14 +81,6 @@ app.post('/api/persons', (req, res) => {
         )
     }
 
-    // if (personExist) {
-    //     return res.status(400).json(
-    //         {
-    //             error: 'Name must be unique'
-    //         }
-    //     )
-    // }
-
     const contact = new Contact({
         name: body.name,
         number: body.number,
@@ -101,6 +91,49 @@ app.post('/api/persons', (req, res) => {
     })
 
 });
+
+app.put('/api/persons/:id', (req, res, next) => {
+    const body = req.body;
+
+    if (body.number === undefined || body.number === '') {
+        return res.status(400).json({
+            error: 'Number is required'
+        });
+    }
+
+    const contact = {
+        name: body.name,
+        number: body.number,
+    }
+
+    Contact.findByIdAndUpdate(req.params.id, contact, {new: true})
+        .then((updatedContact) => {
+            res.json(updatedContact);
+        })
+        .catch(error => {
+            next(error);
+        })
+})
+
+// Middleware para endpoint desconocidos
+const unknownEndPoint = (req, res) => {
+    res.status(404).send({error: 'unknown endpoint'});
+}
+
+app.use(unknownEndPoint);
+
+// Middleware para manejo de errores
+const errorHandler = (err, req, res, next) => {
+    console.error(err.message);
+
+    if (err.name === 'CastError') {
+        return res.status(400).send({error: 'Incorrect ID format'})
+    }
+
+    next(err);
+}
+
+app.use(errorHandler);
 
 const port = process.env.PORT;
 app.listen(port, () => {
