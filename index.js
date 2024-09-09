@@ -63,50 +63,30 @@ app.delete('/api/persons/:id', (req, res, next) => {
 })
 
 // POST a new contact
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body;
-
-    if (body.name === undefined || body.name === '') {
-        return res.status(400).json(
-            {
-                error: 'Name is required'
-            });
-    }
-
-    if (body.number === undefined || body.number === '') {
-        return res.status(400).json(
-            {
-                error: 'Number is required'
-            }
-        )
-    }
 
     const contact = new Contact({
         name: body.name,
         number: body.number,
     });
 
-    contact.save().then((result) => {
-        res.json(result)
-    })
+    contact.save()
+        .then((result) => {
+            res.json(result)
+        })
+        .catch(error => next(error));
 
 });
 
 app.put('/api/persons/:id', (req, res, next) => {
-    const body = req.body;
+    const {name, number} = req.body;
 
-    if (body.number === undefined || body.number === '') {
-        return res.status(400).json({
-            error: 'Number is required'
-        });
-    }
-
-    const contact = {
-        name: body.name,
-        number: body.number,
-    }
-
-    Contact.findByIdAndUpdate(req.params.id, contact, {new: true})
+    Contact.findByIdAndUpdate(
+        req.params.id,
+        {name, number},
+        {new: true, runValidators: true, context: 'query'}
+    )
         .then((updatedContact) => {
             res.json(updatedContact);
         })
@@ -128,6 +108,10 @@ const errorHandler = (err, req, res, next) => {
 
     if (err.name === 'CastError') {
         return res.status(400).send({error: 'Incorrect ID format'})
+    }
+
+    if (err.name === 'ValidationError') {
+        return res.status(400).send({error: err.message});
     }
 
     next(err);

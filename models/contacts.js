@@ -11,8 +11,19 @@ mongoose.connect(url).then(() => {
 }).catch(err => console.log('Error connecting to MONGO',err.message));
 
 const phonebookSchema = new mongoose.Schema({
-    name: String,
-    number: String,
+    name: {
+        type: String,
+        minlength: 3,
+        required: true,
+    },
+    number: {
+        type: String,
+        validate: function (value) {
+            return /^\d{3}-\d{3}-\d{4}$/.test(value);
+        },
+        message: props => `${props.value} Please, enter a valid phone number`,
+        required: true,
+    },
 });
 
 phonebookSchema.set('toJSON', {
